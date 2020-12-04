@@ -3,6 +3,13 @@
 # Author: Neelay Junnarkar
 # Date: 2020-11
 
+# This program creates a vehicle and has it follow some waypoints manually specified in setup_waypoints.
+# The controller is in generate_control, and is currently just something hacked together (and should be replaced).
+# There is currently an attempt in the controllerat correcting for how CARLA gives a discontinuous angle output but
+# this correction doesn't actually work and needs to be fixed.
+# Currently the waypoint only is position and rotation. We might want this to be a full state of the vehicle.
+# Run from PythonAPI\examples in the CARLA folder.
+
 import glob
 import os
 import sys
