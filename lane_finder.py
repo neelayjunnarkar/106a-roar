@@ -63,7 +63,7 @@ class LaneFinder:
 
         # spawn the sensor and attach to vehicle.
         self.sensor = world.spawn_actor(self.blueprint, self.spawn_point, attach_to=self.vehicle)
-        print('sensor: ', self.sensor)
+        # print('sensor: ', self.sensor)
         self.image_queue = queue.Queue()
         self.sensor.listen(self.image_queue.put)
 
@@ -150,10 +150,13 @@ class LaneFinder:
                 self.new_factor * left_coord(prediction[:2])
             self.right_x = (1-self.new_factor) * self.right_x + \
                 self.new_factor * right_coord(prediction[2:])
-
-            print('dists: ', self.left_x, ', ', self.right_x)
         return lanes
 
+    def get_left_lane_x(self):
+        return self.im_width / 2.0 - self.left_x
+    def get_right_lane_x(self):
+        return self.right_x  - self.im_width / 2.0
+    
     def average_slope(self, image, lines):
         left = []
         right = []

@@ -1,5 +1,6 @@
 """ Test program to follow a sequence of closely-spaced waypoints """
 
+from lane_keeping_control import LaneKeepingController
 from pure_pursuit_control import PurePursuitController
 from lane_finder import LaneFinder
 import glob
@@ -138,6 +139,9 @@ class Planner:
                   len(self.waypoints), '): ', target_waypoint.transform.location, ' ', self.road_options[self.target_waypoint_i])
         return target_waypoint
 
+    def get_target_road_option(self, vehicle):
+        return self.road_options[self.target_waypoint_i]
+
     def reached_endpoint(self, vehicle):
         vehicle_location = vehicle.get_transform().location
         end_waypoint = self.waypoints[-1]
@@ -199,7 +203,8 @@ def main(args):
                           WAYPOINT_ERROR_THRESHOLD)
         planner.set_endpoint(vehicle, current_endpoint)
 
-        controller = PurePursuitController(vehicle, target_speed=25)
+        turn_controller = PurePursuitController(vehicle, target_speed=10)
+        lane_keeping_controller = LaneKeepingController(vehicle, target_speed=10)
         print('Created controller')
 
         lanefinder = LaneFinder(world, vehicle)
@@ -226,13 +231,19 @@ def main(args):
                 planner.set_endpoint(vehicle, current_endpoint)
                 target_waypoint = planner.get_target_waypoint(vehicle)
  
-            control = controller.run_step(vehicle, target_waypoint)
-            vehicle.apply_control(control)
-
-            if i % 2 == 0:
+            if i % 1 == 0:
                 lanefinder.run_step()
             else:
                 lanefinder.image_queue.get()
+
+            road_option = planner.get_target_road_option(vehicle)
+            if road_option == RoadOption.LANEFOLLOW or road_option == RoadOption.STRAIGHT:
+                control = lane_keeping_controller.run_step(vehicle, target_waypoint,
+                 lanefinder.get_left_lane_x(), lanefinder.get_right_lane_x())
+            else:
+                control = turn_controller.run_step(vehicle, target_waypoint)
+            vehicle.apply_control(control)
+
             i += 1
     finally:
         # Destroy vehicle.
