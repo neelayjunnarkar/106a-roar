@@ -19,7 +19,7 @@ import queue
 class LaneFinder:
     im_width = 640
     im_height = 480
-    new_factor = 0.5
+    new_factor = 0.75
 
     def __init__(self, world, vehicle):
         self.world = world
@@ -38,9 +38,9 @@ class LaneFinder:
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ], np.float32)
-        self.kf.processNoiseCov = cv2.setIdentity(self.kf.processNoiseCov, 1e-2)
-        self.kf.measurementNoiseCov = cv2.setIdentity(self.kf.measurementNoiseCov, 1e-3)
-        self.kf.errorCovPost = cv2.setIdentity(self.kf.errorCovPost, 1e-1)
+        self.kf.processNoiseCov = cv2.setIdentity(self.kf.processNoiseCov, 1e-2) # 1e-2
+        self.kf.measurementNoiseCov = cv2.setIdentity(self.kf.measurementNoiseCov, 1e-3) # 1e-3
+        self.kf.errorCovPost = cv2.setIdentity(self.kf.errorCovPost, 1e-1) # 1e-1
 
         print(self.kf.predict())
 
@@ -122,11 +122,14 @@ class LaneFinder:
                 x2 = int((y2-b)/(m+.00001))
                 return np.array([x1, y1, x2, y2])
 
+            def coord(image, params):
+                arr = make_coords(image, params)
+                return (arr[0] + arr[2]) / 2.0
+
             def left_coord(params):
                 (m, b) = params
                 return int((y1-b)/(m+.00001))
-
-            def right_coord(params):
+            def right_coord(image, params):
                 (m, b) = params
                 return int((y2-b)/(m+.00001))
 
@@ -147,9 +150,9 @@ class LaneFinder:
                 cv2.line(lanes, (x1, y1), (x2, y2), (255, 0, 0), 10)
 
             self.left_x = (1-self.new_factor) * self.left_x + \
-                self.new_factor * left_coord(prediction[:2])
+                self.new_factor * coord(image, prediction[:2])
             self.right_x = (1-self.new_factor) * self.right_x + \
-                self.new_factor * right_coord(prediction[2:])
+                self.new_factor * coord(image, prediction[2:])
         return lanes
 
     def get_left_lane_x(self):
