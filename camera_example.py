@@ -27,11 +27,11 @@ tMatrix = np.array([[1, 0, 0, 0],
 kf = cv2.KalmanFilter(4, 4)
 kf.transitionMatrix = tMatrix
 kf.measurementMatrix = np.array([
-	[1, 0, 0, 0],
-	[0, 1, 0, 0],
-	[0, 0, 1, 0],
-	[0, 0, 0, 1]
-	], np.float32)
+    [1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1]
+    ], np.float32)
 kf.processNoiseCov = cv2.setIdentity(kf.processNoiseCov, 1e-2)
 kf.measurementNoiseCov = cv2.setIdentity(kf.measurementNoiseCov, 1e-1)
 kf.errorCovPost = cv2.setIdentity(kf.errorCovPost, 1e-1)
@@ -53,76 +53,76 @@ def process_img(image):
     cv2.waitKey(1)
 
 def region_of_interest(image):
-	margin = 200
-	poly = np.array([
-		[(margin, im_height//2), (0, 9*im_height//16), (0, im_height), (im_width, im_height), (im_width, 9*im_height//16), (im_width-margin, im_height//2)]
-		])
-	# poly = np.array([
-	# 	[(0, im_height//2), (0, im_height), (im_width, im_height), (im_width-margin, im_height//2)]
-	# 	])
-	mask = np.zeros_like(image)
-	cv2.fillPoly(mask, poly, 255)
-	return mask
+    margin = 200
+    poly = np.array([
+        [(margin, im_height//2), (0, 9*im_height//16), (0, im_height), (im_width, im_height), (im_width, 9*im_height//16), (im_width-margin, im_height//2)]
+        ])
+    # poly = np.array([
+    #   [(0, im_height//2), (0, im_height), (im_width, im_height), (im_width-margin, im_height//2)]
+    #   ])
+    mask = np.zeros_like(image)
+    cv2.fillPoly(mask, poly, 255)
+    return mask
 
 def line_image(image):
-	lanes = np.zeros_like(image)
-	lines = cv2.HoughLinesP(image, 2, np.pi/180, 70, minLineLength=40, maxLineGap=5)
+    lanes = np.zeros_like(image)
+    lines = cv2.HoughLinesP(image, 2, np.pi/180, 70, minLineLength=40, maxLineGap=5)
 
-	left = []
-	right = []
-	if lines is not None:
-	    for line in lines:
-	    	x1, y1, x2, y2 = line[0]
-	    	if x1 == x2 or abs(np.arctan(abs(y2-y1)/abs(x2-x1))) >= np.pi/36:
-	    		m, b = np.polyfit((x1, x2), (y1, y2), 1)
-	    		if m < 0:
-	    			left.append((m, b))
-	    		else:
-	    			right.append((m, b))
-	    left_avg = np.average(left, axis=0)
-	    right_avg = np.average(right, axis=0)
+    left = []
+    right = []
+    if lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            if x1 == x2 or abs(np.arctan(abs(y2-y1)/abs(x2-x1))) >= np.pi/10:
+                m, b = np.polyfit((x1, x2), (y1, y2), 1)
+                if m < 0:
+                    left.append((m, b))
+                else:
+                    right.append((m, b))
+        left_avg = np.average(left, axis=0)
+        right_avg = np.average(right, axis=0)
 
-	    def make_coords(image, params):
-	    	(m, b) = params
-	    	y1 = image.shape[0]
-	    	y2 = int(y1*3/5)
-	    	x1 = int((y1-b)/(m+.00001))
-	    	x2 = int((y2-b)/(m+.00001))
-	    	return np.array([x1, y1, x2, y2])
+        def make_coords(image, params):
+            (m, b) = params
+            y1 = image.shape[0]
+            y2 = int(y1*3/5)
+            x1 = int((y1-b)/(m+.00001))
+            x2 = int((y2-b)/(m+.00001))
+            return np.array([x1, y1, x2, y2])
 
-	    if not np.any(np.isnan(left_avg)) and not np.any(np.isnan(right_avg)):
-	    	measurements = np.array(list(left_avg) + list(right_avg), dtype=np.float32)
-	    	left_measure = make_coords(image, left_avg)
-	    	right_measure = make_coords(image, right_avg)
-	    	print(abs(right_measure[2]-left_measure[2]))
-	    	if 200 <= abs(right_measure[2]-left_measure[2]) <= 400:
-	    		kf.correct(measurements)
-	    
-	    prediction = kf.predict()
-	    left_line = make_coords(image, prediction[:2])
-	    right_line = make_coords(image, prediction[2:])
-	    for x1, y1, x2, y2 in [left_line, right_line]:
-		    cv2.line(lanes, (x1, y1), (x2, y2), (255, 0, 0), 10)
-	return lanes
+        if not np.any(np.isnan(left_avg)) and not np.any(np.isnan(right_avg)):
+            measurements = np.array(list(left_avg) + list(right_avg), dtype=np.float32)
+            left_measure = make_coords(image, left_avg)
+            right_measure = make_coords(image, right_avg)
+            print(abs(right_measure[2]-left_measure[2]))
+            if 200 <= abs(right_measure[2]-left_measure[2]) <= 350:
+                kf.correct(measurements)
+
+        prediction = kf.predict()
+        left_line = make_coords(image, prediction[:2]) 
+        right_line = make_coords(image, prediction[2:])
+        for x1, y1, x2, y2 in [left_line, right_line]:
+            cv2.line(lanes, (x1, y1), (x2, y2), (255, 0, 0), 10)
+    return lanes
 
 def average_slope(image, lines):
-	left = []
-	right = []
-	for line in lines:
-		x1, y1, x2, y2 = line[0]
-		m, b = np.polyfit((x1, x2), (y1, y2), 1)
-		if m < 0:
-			left.append((m, b))
-		else:
-			right.append((m, b))
-	left_avg = np.average(left, axis=0)
-	right_avg = np.average(right, axis=0)
+    left = []
+    right = []
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        m, b = np.polyfit((x1, x2), (y1, y2), 1)
+        if m < 0:
+            left.append((m, b))
+        else:
+            right.append((m, b))
+    left_avg = np.average(left, axis=0)
+    right_avg = np.average(right, axis=0)
 
 
 
 
 def process_img2(image):
-	print(f"Obstacle: {image.other_actor} is {image.distance} units away from {image.actor}.")
+    print(f"Obstacle: {image.other_actor} is {image.distance} units away from {image.actor}.")
 
 
 actor_list = []
@@ -147,7 +147,6 @@ try:
 
     vehicle = world.spawn_actor(bp, spawn_point)
     vehicle.set_autopilot(True)
-    vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer=0.0))
     actor_list.append(vehicle)
 
     # https://carla.readthedocs.io/en/latest/cameras_and_sensors
@@ -177,11 +176,12 @@ try:
     # do something with this sensor
 
     # start = time.clock()
+    client.start_recorder("recording01.log")
     while True:
-    	world.tick()
-    	process_img(image_queue.get())
-    	# print(start - time.clock())
-    	# start = time.clock()
+        world.tick()
+        process_img(image_queue.get())
+        # print(start - time.clock())
+        # start = time.clock()
 
     # sensor2.listen(lambda data: process_img2(data))
 
@@ -189,6 +189,7 @@ try:
     # time.sleep(15)
 
 finally:
+    client.stop_recorder()
     print('destroying actors')
     for actor in actor_list:
         actor.destroy()
