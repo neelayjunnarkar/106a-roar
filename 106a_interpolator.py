@@ -38,7 +38,7 @@ import argparse
 import numpy as np
 from queue import Queue
 
-WAYPOINT_ERROR_THRESHOLD = 1  # Error to consider waypoint reached
+WAYPOINT_ERROR_THRESHOLD = 3  # Error to consider waypoint reached
 PASSENGER_ARRIVAL_RATE = 30  # Expected time between passengers in seconds
 MAP_SAMPLING_RESOLUTION = 10 # Distance between possible waypoints for pickup / dropoff
 
@@ -180,9 +180,8 @@ def main(args):
         
         # Move spectator to newly created vehicle.
         world.tick()
-        world_snapshot = world.wait_for_tick()
-        actor_snapshot = world_snapshot.find(vehicle.id)
-        spectator.set_transform(actor_snapshot.get_transform())
+        world.tick()
+        spectator.set_transform(vehicle.get_transform())
         print("Initial vehicle position: ", vehicle.get_transform().location)
 
         all_waypoints = world_map.generate_waypoints(10) # meters between pickup/dropoff positions 
@@ -207,14 +206,13 @@ def main(args):
         print('Created Lane Finder')
 
         world.tick()
+        i = 0
         while True:
-            print('a')
-            world_snapshot = world.wait_for_tick()
-            print('b')
+            world.tick()
+            world_snapshot = world.get_snapshot()
             time = world_snapshot.timestamp.elapsed_seconds
-            print('time: start')
+
             if passenger_gen.new_passenger_arrived(time):
-                print("New passenger at time ", time)
                 endpoint_selector.add_passenger_point(
                     passenger_gen.generate_new_passenger(all_waypoints))
 
@@ -227,19 +225,24 @@ def main(args):
                     break
                 planner.set_endpoint(vehicle, current_endpoint)
                 target_waypoint = planner.get_target_waypoint(vehicle)
-            print('time: ', time, ' handled passengers and waypoints')
+ 
             control = controller.run_step(vehicle, target_waypoint)
             vehicle.apply_control(control)
-            print('time: ', time, ' applied control')
-            lanefinder.run_step()
-            print('time: ', time, ' ran lanefinder')
+
+            if i % 2 == 0:
+                lanefinder.run_step()
+            else:
+                lanefinder.image_queue.get()
+            i += 1
     finally:
         # Destroy vehicle.
         print("Destroy Vehicle")
         # client.apply_batch([carla.command.DestroyActor(vehicle),
         #     carla.command.DestroyActor(lanefinder.sensor)])
-        vehicle.destroy()
-        lanefinder.sensor.destroy()
+        if vehicle is not None:
+            vehicle.destroy()
+        if lanefinder is not None and lanefinder.sensor is not None:
+            lanefinder.sensor.destroy()
 
 if __name__ == '__main__':
     try:

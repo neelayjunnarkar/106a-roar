@@ -16,7 +16,6 @@ import numpy as np
 import cv2
 import queue
 
-
 class LaneFinder:
     im_width = 640
     im_height = 480
@@ -65,7 +64,7 @@ class LaneFinder:
 
         # spawn the sensor and attach to vehicle.
         self.sensor = world.spawn_actor(self.blueprint, self.spawn_point, attach_to=self.vehicle)
-        print('sensor: ', sensor)
+        print('sensor: ', self.sensor)
         self.image_queue = queue.Queue()
         self.sensor.listen(self.image_queue.put)
 
@@ -148,9 +147,9 @@ class LaneFinder:
             for x1, y1, x2, y2 in [left_line, right_line]:
                 cv2.line(lanes, (x1, y1), (x2, y2), (255, 0, 0), 10)
 
-            self.left_x = (1-self.new_factor) * left_x + \
+            self.left_x = (1-self.new_factor) * self.left_x + \
                 self.new_factor * left_coord(prediction[:2])
-            self.right_x = (1-self.new_factor) * right_x + \
+            self.right_x = (1-self.new_factor) * self.right_x + \
                 self.new_factor * right_coord(prediction[2:])
 
             print('dists: ', self.left_x, ', ', self.right_x)
