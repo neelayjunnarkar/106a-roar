@@ -39,8 +39,7 @@ class LaneFinder:
             [0, 0, 0, 1]
         ], np.float32)
         self.kf.processNoiseCov = cv2.setIdentity(self.kf.processNoiseCov, 1e-2)
-        self.kf.measurementNoiseCov = cv2.setIdentity(
-            self.kf.measurementNoiseCov, 1e-1)
+        self.kf.measurementNoiseCov = cv2.setIdentity(self.kf.measurementNoiseCov, 1e-3)
         self.kf.errorCovPost = cv2.setIdentity(self.kf.errorCovPost, 1e-1)
 
         print(self.kf.predict())
@@ -106,7 +105,7 @@ class LaneFinder:
         if lines is not None:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
-                if x1 == x2 or abs(np.arctan(abs(y2-y1)/abs(x2-x1))) >= np.pi/36:
+                if x1 == x2 or abs(np.arctan(abs(y2-y1)/abs(x2-x1))) >= np.pi/10:
                     m, b = np.polyfit((x1, x2), (y1, y2), 1)
                     if m < 0:
                         left.append((m, b))
@@ -137,7 +136,7 @@ class LaneFinder:
                 left_measure = make_coords(image, left_avg)
                 right_measure = make_coords(image, right_avg)
                 # print(abs(right_measure[2]-left_measure[2]))
-                if 200 <= abs(right_measure[2]-left_measure[2]) <= 400:
+                if 200 <= right_measure[2]-left_measure[2] <= 350:
                     self.kf.correct(measurements)
 
             prediction = self.kf.predict()
