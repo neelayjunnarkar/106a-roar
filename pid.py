@@ -1,10 +1,3 @@
-#**********************************************
-#       Self-Driving Car - Coursera
-#        Created on: March 30, 2019
-#         Author: Munir Jojo-Verge
-#*********************************************
-
-# Since my MPC is not working sue to probles with ipopt and nlopot I decided to go for a STUPID PID
 
 import numpy as np
 import time

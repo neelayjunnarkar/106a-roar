@@ -29,9 +29,6 @@ except IndexError:
 import carla
 from carla import ColorConverter as cc
 
-from agents.navigation.behavior_agent import BehaviorAgent  # pylint: disable=import-error
-from agents.navigation.roaming_agent import RoamingAgent  # pylint: disable=import-error
-from agents.navigation.basic_agent import BasicAgent  # pylint: disable=import-error
 from agents.navigation.global_route_planner import GlobalRoutePlanner
 from agents.navigation.global_route_planner_dao import GlobalRoutePlannerDAO
 
@@ -40,8 +37,8 @@ import numpy as np
 from queue import Queue
 
 WAYPOINT_ERROR_THRESHOLD = 3  # Error to consider waypoint reached
-
 PASSENGER_ARRIVAL_RATE = 30  # Expected time between passengers in seconds
+MAP_SAMPLING_RESOLUTION = 10 # Distance between possible waypoints for pickup / dropoff
 
 class PassengerGenerator:
     def __init__(self, passenger_arrival_rate, rng):

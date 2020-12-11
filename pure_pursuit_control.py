@@ -14,7 +14,6 @@ except IndexError:
 import carla
 import numpy as np
 import math
-from utilities import Waypoint
 
 """
 Citation: https://github.com/AtsushiSakai/PythonRobotics/blob/master
